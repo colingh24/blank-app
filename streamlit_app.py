@@ -42,38 +42,73 @@ try:
     st.subheader("📊 Data Table")
     st.dataframe(data.head(50), use_container_width=True)
 
-    st.subheader("📈 Temperature Trend")
+    # Section 1: Raw Monthly Trend (Slices first 100 rows as per original code)
+    st.subheader("📈 Monthly Temperature Trend")
     if (
         "Year" in data.columns
         and "Month" in data.columns
         and "Anomaly" in data.columns
     ):
-        # Using a subset for the plot as per your original code (head 100)
-        # Note: You can change data.head(100) to 'data' if you want to see the whole history
         plot_data = data.head(100)
 
-        # Base line chart for raw Anomaly data
         fig = px.line(
             plot_data,
             x=plot_data.index,
             y="Anomaly",
-            title=f"Temperature Anomaly Over Time ({window_size}-Month Rolling Mean)",
+            title="Monthly Temperature Anomaly (First 100 Records Sample)",
             labels={"Anomaly": "Temperature Anomaly (°C)", "index": "Record"},
             template="plotly_white",
         )
 
-        # Add the Rolling Mean line on top
         fig.add_trace(
             go.Scatter(
                 x=plot_data.index,
                 y=plot_data["Rolling_Mean"],
                 mode="lines",
                 name=f"{window_size}-Mo Rolling Mean",
-                line=dict(color="red", width=2.5),
+                line=dict(color="red", width=2),
             )
         )
-
         st.plotly_chart(fig, use_container_width=True)
+
+    # Section 2: NEW Diagrams for Mean Temperature Values
+    st.subheader("📊 Mean Temperature Values & Trends")
+    col_chart1, col_chart2 = st.columns(2)
+
+    with col_chart1:
+        if "Rolling_Mean" in data.columns and "Year" in data.columns:
+            # Diagram 1: Full dataset rolling mean trend line
+            fig_rolling = px.line(
+                data,
+                x="Year",
+                y="Rolling_Mean",
+                title=f"Full Dataset: {window_size}-Month Rolling Mean Trend",
+                labels={
+                    "Rolling_Mean": "Mean Anomaly (°C)",
+                    "Year": "Timeline",
+                },
+                template="plotly_white",
+                color_discrete_sequence=["#E74C3C"],
+            )
+            st.plotly_chart(fig_rolling, use_container_width=True)
+
+    with col_chart2:
+        if "Year" in data.columns and "Anomaly" in data.columns:
+            # Calculate the overall mean temperature values grouped by year
+            yearly_mean = data.groupby("Year")["Anomaly"].mean().reset_index()
+
+            # Diagram 2: Annual average temperature anomaly bar chart
+            fig_yearly = px.bar(
+                yearly_mean,
+                x="Year",
+                y="Anomaly",
+                title="Average Annual Temperature Anomaly",
+                labels={"Anomaly": "Mean Anomaly (°C)", "Year": "Year"},
+                template="plotly_white",
+                color="Anomaly",
+                color_continuous_scale=px.colors.sequential.Reds,
+            )
+            st.plotly_chart(fig_yearly, use_container_width=True)
 
     st.subheader("📋 Dataset Info")
     col1, col2, col3 = st.columns(3)
